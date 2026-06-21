@@ -1,0 +1,37 @@
+# Index — Albert Vault
+
+Catalog of pages. Thin by design; `log.md` is the authoritative journal.
+
+## Schema
+
+- `CLAUDE.md` — operational vault protocol.
+- `STRUCTURE.md` — placement rules.
+- `README.md` — what this vault is (+ the PEMRR frame).
+
+## Design
+
+- `drafts/albert_assembly.md` — **the assembly contract**: Octo as Reaction
+  skeleton, component placement (Fluxion connector / kaeru rig-tool /
+  graph-flow cogitator), layering, Octo-side gaps. *(draft)*
+- `roadmap.md` — assembly plan; current front = GraphCogitator.
+- `agent_runtime_landscape.md` — **competitive survey**: 5 "claw" agent runtimes
+  (OpenClaw + picoclaw/goclaw + openhuman/moltis); what to borrow, where Albert
+  is already ahead. *(scratch / survey)*
+- `context_memory_layering.md` — **three tiers, three owners**: hot context (Octo
+  history) / staged cognition state (graph-llm checkpointer) / deliberate memory
+  (kaeru). Checkpoint+steering = graph-native. *(scratch / design note)*
+- `octo_bus_backpressure_fix.md` — **fix brief + outcome**: the one real Octo-core
+  gap for the GraphCogitator (silent `Lagged` drop); phased fix, acceptance
+  criteria, files. *(task — done, octo `03467eb`)*
+
+## Sources (immutable)
+
+- `sources/sacrarium_snapshot/albert_system_map.md` — PEMRR map.
+- `sources/sacrarium_snapshot/octo_runtime.md` — Reaction runtime.
+- `sources/sacrarium_snapshot/fluxion.md` — Perception substrate.
+- `sources/sacrarium_snapshot/kaeru.md` — Memory substrate.
+
+## Not modelled yet
+
+- Experience / Reflection layers (cognition internals) — beyond current scope.
+- Skills / sandbox execution (forkd) — deferred.

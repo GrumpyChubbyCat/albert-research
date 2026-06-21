@@ -1,0 +1,239 @@
+# Log — Albert Vault
+
+Append-only. Every non-trivial change. Header: `## [YYYY-MM-DD HH:MM] <op> | <title>`.
+
+## [2026-06-21 19:49] note | Vault initialised
+
+Created the Albert operational vault (`~/code/personal/albert/research/`), mirroring
+the Octo vault layout. Generic schema (`CLAUDE.md`, `STRUCTURE.md`) cloned from the
+Octo vault; `README.md`, `index.md`, this `log.md` authored fresh.
+
+## [2026-06-21 19:49] ingest | Seeded raw sources (no forkd)
+
+Copied four immutable snapshots into `sources/sacrarium_snapshot/` from the Octo
+vault: `albert_system_map.md` (PEMRR map), `octo_runtime.md` (Reaction runtime),
+`fluxion.md` (Perception), `kaeru.md` (Memory). **forkd deliberately excluded** —
+skills/sandbox is out of scope for now (per directive).
+
+## [2026-06-21 19:49] note | Assembly contract drafted
+
+Wrote `drafts/albert_assembly.md` — the integration design worked out in session:
+Octo as the Reaction skeleton ("spine, not brain"); the connectors-as-organs vs
+rig-tools-as-mind-instruments split; component placement (Fluxion = sensor
+connector, kaeru = rig-tool via a `kaeru-rig` adapter, GraphCogitator over
+graph-flow as the PEMRR loop on the pluggable `Cogitator` trait); the layering;
+what's already aligned in Octo (`vision.*` kinds, NATS-shaped envelope,
+reflex/cognition split, supervision + control-plane self-restart = the OpenClaw
+gap); and the Octo-side gaps (inbound media/Fluxion event contract, kaeru-rig,
+distributed transport). Plus `roadmap.md` — first step = kaeru-rig.
+
+## [2026-06-21 22:47] note | State sync — three integration seams already closed
+
+User reports reality has moved ahead of the vault. Of the four open fronts in
+`roadmap.md`, the tooling for three is **already built**:
+
+- **kaeru-rig** — done (was the "suggested first step"; memory seam closed).
+- **octo-rig** — done (connector dispatch; action space as organs).
+- **telegram connector** — done (the "mouth").
+- **graph-llm** crate — exists (substrate for the GraphCogitator / PEMRR loop).
+
+So the next concrete move is the **GraphCogitator draft, by octolab's playbook**
+(octolab ran a single-shot `ReactCogitator`; Albert gets the graph). Roadmap
+updated to reflect the shift. Awaiting incoming material from the user before
+drafting — recording state now, design to follow.
+
+## [2026-06-21 22:56] note | Surveyed 5 competing agent runtimes ("claw" landscape)
+
+"Look around before building Albert." Analyzed five personal-agent runtimes from
+source/docs (fan-out, one researcher per repo): **OpenClaw** (TS/Node reference),
+**picoclaw** (Go, sipeed), **goclaw** (Go, nextlevelbuilder), **openhuman** (Rust,
+tinyhumansai), **moltis** (Rust, moltis-org). All five verified real AI-agent
+runtimes (not the Captain-Claw game). Wrote `agent_runtime_landscape.md`.
+
+Headline findings:
+1. **None runs a real cognition graph** — all hand-rolled imperative loops (goclaw
+   has the closest: an opt-in staged pipeline, still not a graph DSL). Albert's
+   `GraphCogitator`-over-`graph-llm` bet is differentiated, not derivative.
+2. **Convergent skeleton ≈ Octo, independently** — gateway control-plane,
+   session-keyed (same-session serialized) concurrency, many channel connectors,
+   sub-agent delegation, **steering** (mid-turn user injection — Octo lacks this).
+3. **Safety:** isolation strongest→weakest moltis (Apple-Container VM) > openhuman
+   > OpenClaw > goclaw > picoclaw (opt-in, degradable). Recovery axis is weak
+   field-wide; **moltis alone** has pre-mutation checkpoint+rollback. **OpenClaw
+   explicitly lacks self-restart/watchdog → external confirmation of the
+   "OpenClaw gap"** that motivated Octo's control-plane.
+4. **Context:** all converge on pluggable assemble/ingest/compact + token budget +
+   summarize-keeping-tail. goclaw (L0/L1/L2 + temporal-validity KG + `[[wikilinks]]`
+   + BM25/pgvector) and openhuman (Memory Tree) are **reinventing fragments of
+   kaeru inline** — validates kaeru as a standalone substrate. Memory-as-
+   agent-tool everywhere → vindicates kaeru-rig framing.
+
+Albert takeaways recorded on the page: keep+validate the graph; add steering to
+Octo; steal checkpoint/rollback (via kaeru bi-temporal, not file snapshots);
+consolidate_out-before-compact; supervision is already a moat vs OpenClaw.
+
+## [2026-06-21 23:11] note | Three-tier context model; corrected checkpoint call
+
+User feedback sharpened the landscape takeaways into a clean layering. Wrote
+`context_memory_layering.md` and corrected two muddled takeaways on
+`agent_runtime_landscape.md`.
+
+- **Octo = anti-velosiped.** Finding 2 reframed: the field keeps rebuilding the
+  gateway+session+connectors+sub-agent skeleton; Octo is that, done & supervised.
+  Novelty budget goes to graph + kaeru, not the runtime. (Added as takeaway 7.)
+- **Three tiers, three owners:** *hot context* = Octo modular history (the hottest
+  layer — NOT kaeru); *staged cognition state* = graph-llm checkpointer; *delib-
+  erate memory* = kaeru (`recall`/`jot`/`consolidate`).
+- **Checkpoint correction:** my "checkpoint via kaeru bi-temporal" was wrong.
+  Checkpoint/rollback/branch/resume is **native to graph-llm's checkpointer** over
+  graph state; moltis's file-snapshot hook is a hand-rolled version of that. The
+  graph bet buys it for free. **Steering = the interrupt side of the same
+  checkpointer** (inject between nodes ⇔ snapshot between nodes).
+- **"Save before compact" = three ops on three tiers**, not one dump.
+
+Open questions parked on the layering page: where the working window lives when
+cognition is a graph; kaeru recall as graph-node vs rig-tool; checkpoint
+granularity (per node vs per tool call).
+
+## [2026-06-21 23:40] note | Read live octo code; A–E reassessed; bus-fix brief
+
+Read `~/code/personal/octo/octo/` (cogitator, bus, runtime, octo-rig, octolab,
+octo-history, subscription). Snapshot had under-sold Octo — big correction:
+
+- **`Cogitator` trait is already long-running/supervised/bus-connected** with a
+  rich `CogitatorContext` (publish / bus / subscribe / publish_and_await_response
+  / connectors / shutdown), pre-subscribed before connectors start. README:
+  "cognition is userland — you bring the brain." So of last turn's asks A–E, only
+  **D (backpressure) is a real core change**; A/B/C/E + Q1 are all userland (build
+  the GraphCogitator crate). My earlier "single-shot cogitator" assumption was
+  wrong — octolab's `ReactCogitator` is long-running; only its per-message
+  cognition is a synchronous rig `multi_turn(5)` loop (the bit the graph replaces).
+- **octo-history** = the hot-context tier, already a crate (`HistoryStore`,
+  per-channel transcript, "NOT agentic memory"). Q1 closed: read window at run
+  start, append canonical turns on commit. No core change.
+- **Steering is pre-designed**: `BackpressureStrategy::Steer` ("borrowed from
+  OpenClaw's steer mode") exists but is unwired.
+- **Bus backpressure bug confirmed real but latent in octolab** — masked by low
+  human rate + default 1024 broadcast capacity + dispatch's own by-correlation
+  subscription. NOT solved, just not provoked. Will bite the graph: wide/high-rate
+  perception (Fluxion) + slower cognition + steering-needs-undrained-loop ⇒ lag >
+  capacity ⇒ silent drop (`Subscription::next` discards the `Lagged` count).
+- Wrote `octo_bus_backpressure_fix.md` — implementation-ready brief (evidence w/
+  file locations, the Block-vs-fan-out tension, phased fix, acceptance criteria,
+  files). Updated `roadmap.md` Octo-side prereqs: backpressure = only true core
+  gap; memory-exposure struck; inbound-media partially done. User will return
+  with the fix implemented.
+
+## [2026-06-22 00:01] note | Bus fix landed; convergence insight consolidated to Octo vault
+
+- **Bus backpressure fixed** by the user (Octo commit `03467eb`). `octo_bus_backpressure_fix.md`
+  → `done`: Phase 1 (lag surfaced via `lagged_total()`; `subscribe_options()`
+  cogitator hook) + Phase 2 (per-subscriber shim with DropOldest/DropNewest/Steer/
+  Throttle/best-effort Block; `Steer` = the steering primitive). 59 tests pass.
+  The only true Octo-core prerequisite for the GraphCogitator is closed — no
+  kernel blocker remains; wiring `Steer` into the cogitator's subscriptions is
+  userland.
+- **Convergence insight consolidated cross-vault.** Per user, the survey's
+  positioning takeaway (the whole personal-agent-runtime field independently
+  rebuilds Octo's connector+channel skeleton → Octo's value as a runtime *is*
+  that layer) belongs in Octo's own vault. Wrote it there:
+  `~/code/personal/octo/research/drafts/field_converges_on_octo_shape.md` (+ its
+  log/index), cross-referencing Octo's `novelty` / `octo_as_agent_runtime_eval` /
+  `connector_channel_split`, with provenance back to our
+  `agent_runtime_landscape.md`. Operational→operational cross-vault, path refs
+  (not wikilinks).
+
+## [2026-06-22 00:36] task | Albert Phase 1 built — talk + memory + reminders (working-first)
+
+"Поехали." User chose **working-first** (extend octolab's rig tool-loop; graph is
+Phase 2). Albert now exists as a runnable assembly.
+
+- **New crate `octo-connector-scheduler`** (in octo, realises the `notifications.md`
+  design): bidirectional managed connector; emits `alarm.fired`, accepts
+  `octo.scheduler.{add,cancel,list}_alarm`, OneShot + Interval triggers, JSON
+  persistence (atomic), 1s tick. Advertises a `description` → reachable via the
+  cogitator's env-as-tools dispatch (no new tool). Test
+  `interval_alarm_fires_and_cancels` (add→fire→cancel over the bus) green.
+- **New `albert` crate** — own Cargo workspace at `~/code/personal/albert/` (own
+  `[patch.crates-io]` for graph_builder, since the patch is per-workspace-root and
+  kaeru pulls cozo). Path deps to sibling octo + kaeru checkouts (switch to git
+  once pushed). `AlbertCogitator` = octolab's `ReactCogitator` grown up: perceives
+  `chat.message` + `alarm.fired`; tools = `dispatch_to_connector` (scheduler) +
+  kaeru verbs (awake/recall/read/remember/task/done/recent). Hot context =
+  octo-history; deliberate memory = kaeru (initiative "albert").
+- **Reminder loop:** ask → kaeru task + dispatch add_alarm (carries task + channel
+  + reply_via in the alarm payload) → `alarm.fired` → recall + remind on the stored
+  channel → user "done" → kaeru_done + dispatch cancel_alarm. Active alarms are
+  front-loaded into each chat turn (queried from the scheduler) so the model
+  cancels the right one by matching the task — no id threading.
+- **Builds clean** (1m20s incl. cozo). Smoke test (console, `/start` reflex) round-
+  trips end-to-end. LLM reminder dance not yet exercised (needs the user's
+  OpenRouter key). Caveat: kaeru is single-writer — don't run Albert while
+  kaeru-mcp holds the same vault.
+
+## [2026-06-22 00:46] reorg | Code moved under `albert/`; env prefix OCTO→ALBERT
+
+Mirror octo's layout: code now lives at `~/code/personal/albert/albert/` (crate),
+parallel to `research/`, with `.env` at the repo root. Path deps deepened
+`../…` → `../../…`; `DOTENV_PATH` → `…/../.env`. Config now reads the **`ALBERT_`**
+env prefix (`ALBERT_OPENAI_KEY` / `ALBERT_LLM_MODEL` / `ALBERT_LLM_BASE_URL` /
+`ALBERT_HISTORY`). The **Telegram token keeps its own name `OCTO_TELEGRAM_TOKEN`**
+(it's the connector's, not Albert's app config) — read separately, `#[serde(skip)]`
+on the field. Rebuilds clean; smoke test confirms ALBERT_ vars load + console
+fallback when the token is empty.
+
+## [2026-06-22 00:59] note | Phase 1 verified LIVE in Telegram — the reminder loop works end-to-end
+
+First real conversation with Albert on a Telegram bot (LamantinAI Assistant,
+model deepseek/deepseek-v4-flash via OpenRouter). User: "Прошло просто
+великолепно!" The full loop ran end-to-end with a real LLM:
+perceive request → kaeru task + scheduler add_alarm → `alarm.fired` → recall +
+remind in-chat → user confirms → kaeru_done + cancel_alarm. The open worry from
+the build entry (does the model thread channel/reply_via into the alarm payload?)
+is resolved in practice — reminders landed in the chat. Albert is a real, talking,
+remembering, reminding assistant. Octo (Reaction) + kaeru (Memory) + the scheduler
+connector compose as designed. Next: Phase 2 (graph-llm GraphCogitator) when the
+working-first version has earned its keep.
+
+## [2026-06-22 01:25] note | Capabilities brainstorm; webclaw rejected; web-parser is a self-built organ
+
+Discussed what Albert lacks. Recorded as a Capabilities section in `roadmap.md`.
+
+- **webclaw** (`0xMassi/webclaw`) researched (cross-vault survey style). Real, Rust,
+  clean Octo-connector fit (MCP/axum sidecar), TLS-fingerprint HTTP + readability +
+  QuickJS data-islands; search = Serper API. **Rejected for the product:** AGPL-3.0
+  (copyleft gate) + offloads JS/captcha to a **paid cloud** — exactly the cases
+  Playwright owns. Kept as reference for browserless fast-path layering only.
+- **Web search + parse → user builds it himself** (Yandex + Playwright, Google
+  later). Octo seam settled: one `octo-connector-web` organ, `web.search` +
+  `web.fetch { render: auto|http|browser }`; **the agent chooses Playwright via the
+  `render` param** (auto = cheap-HTTP-first, escalate on JS/block), the tradeoff
+  taught in the connector `description`. Playwright runs as a supervised Node
+  sidecar. Zero cogitator change (env-as-tools). I scaffold the connector wrapper
+  when the parser core is ready.
+- **Skills** split into declarative (SKILL.md registry, mind-side) vs executable
+  (code → sandbox). **Code + executable skills converge on one sandboxed-execution
+  substrate = the reactivated forkd** (WASM-first → full runner connector). The
+  old "deferred (not now)" forkd node is reactivated — skills are due.
+
+## [2026-06-21 23:56] task | Bus backpressure fix landed — GraphCogitator unblocked
+
+Implemented `octo_bus_backpressure_fix.md` in live octo (`~/code/personal/octo/`,
+commit `03467eb`). The brief matched the code 1:1.
+
+- **Phase 1 (visibility + knobs):** `Subscription::next()` now warns + counts on
+  broadcast `Lagged` (no more silent drop), exposed via `lagged_total()`.
+  `subscribe_sync` takes `SubscribeOptions`; threaded through the runtime. New
+  `Cogitator::subscribe_options()` hook.
+- **Phase 2 (per-subscriber shim):** forwarder task → bounded per-subscriber queue
+  honoring DropOldest/DropNewest/Steer/Throttle/best-effort Block; a slow consumer
+  no longer stalls the others. `Steer` supersedes by channel/correlation = the
+  steering primitive (closes the "Octo lacks steering" gap from Finding 2).
+- Default `SubscribeOptions` → `DropOldest` (= prior ignored-opts behavior) →
+  octolab unchanged. Phase 3 (never-drop control lane) deferred.
+- Acceptance covered by 3 new tests; octo-core 59 pass.
+
+Marked the brief **done** (+ Outcome), struck the roadmap prereq, updated index.
+**No remaining Octo-core blockers for the GraphCogitator** — its three tools
+(kaeru-rig, octo-rig, graph-llm) are in hand and the steering primitive now
+exists. Next concrete move stays the GraphCogitator draft.
