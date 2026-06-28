@@ -77,15 +77,39 @@ connector set, so a new connector with a `description` lands in his hands with
     LamantinAI) and it offloads exactly the JS/captcha cases to a **paid cloud** —
     the cases Playwright owns. Kept only as a *reference* for the browserless
     fast-path layering (TLS-fingerprint + readability), not a dependency.
+- **Loop scratchpad** — **built 2026-06-28** (`albert/src/scratchpad.rs`). A
+  super-operational per-task working object the agent authors (`scratchpad_goal/
+  step/mark/note/clear`) and sees each turn; makes multi-step tasks verifiable
+  (done = all steps `verified`). Distinct from chat (log) and kaeru (durable, tool).
+  Design: [[loop_scratchpad]]. This is the realization of the "cycle window" idea —
+  delivered on the plain loop, no graph needed.
 - **Skills** — two things, don't conflate: *declarative* (SKILL.md registry the
   cogitator equips; mind-side, no exec, metadata can live in kaeru) vs *executable*
-  (code → needs the sandbox substrate below).
+  (code → needs the sandbox substrate below). **Declarative: design worked out**
+  ([[declarative_skills]] — storage/infra/visibility/accessibility, progressive
+  disclosure); **implementation is the next build.**
 - **Code (minimal) + executable skills** — converge on one **sandboxed execution
   substrate** = the reactivated **forkd** (see Deferred). Even "minimal" code needs
   real isolation (landscape lesson; OpenClaw's picode runs in a docker sandbox).
   Tiers: WASM-first (Wasmtime/WASI, minimal-safe, à la moltis `wasm-calc`) → full
   runner connector (bubblewrap/landlock/container, picode-level) as an organ
   owning isolation below REST.
+- **Proactivity via scheduler + memory routines** (agreed 2026-06-28) — **reuse
+  the scheduler already built; no new substrate.** A *routine* = a recurring system
+  alarm distinguished by payload: `{ routine: "memory_reflection" }` (silent — the
+  agent works on memory, no user message) vs a user reminder `{ task, channel,
+  reply_via }`. `on_alarm` gets a routine branch; Albert **seeds a base routine on
+  startup** (like the owner is seeded in the ACL) so he wakes up with base
+  self-care. Depends on kaeru's **memory-reflection primitive (next kaeru
+  release)** — the routine plumbing can land now with a placeholder
+  (`synthesise`/`lint`/`improve`).
+- **Cycle / Phase-2 graph** — the GraphCogitator splits today's single working-first
+  turn into explicit PEMRR nodes. Value confirmed (user, 2026-06-28): **between
+  stages the agent must have its accumulated context in front of it** — the graph's
+  threaded, checkpointable state ([[context_memory_layering]] tier 2) gives exactly
+  that (perceived → interpreted → recalled → reflected → react), vs one opaque
+  rig-tool-loop turn. Resolves the open "does the graph earn its complexity?"
+  hypothesis: **yes** — the explicit inter-stage context is the payoff.
 
 ## Deferred (not now)
 

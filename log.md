@@ -216,6 +216,59 @@ Discussed what Albert lacks. Recorded as a Capabilities section in `roadmap.md`.
   substrate = the reactivated forkd** (WASM-first → full runner connector). The
   old "deferred (not now)" forkd node is reactivated — skills are due.
 
+## [2026-06-28 22:55] feat | Telegram authorization wired; directions agreed
+
+Octo landed Telegram authorization (octo `b3cfebe`: edge ACL, role→TrustLevel,
+runtime-mutable list). Updated Albert's integration:
+- **Edge ACL:** `ALBERT_OWNER_CHAT` → `with_acl` seeded with the owner; unlisted
+  chats dropped before the bus. No owner → `new` (open) + a plain WARNING log.
+  (config.rs owner_chat, error.rs `Acl`, main.rs wiring, ACL at `state/`.)
+- **Owner ACL admin (agent-driven):** mirrored octolab — `/allow <id>` `/deny <id>`
+  `/allowed` as a **deterministic reflex** (security stays out of the LLM),
+  owner-gated via the `role` tag on incoming channel metadata, dispatched to the
+  telegram connector via `publish_and_await_response`. Emoji-free per new rule.
+- Builds clean against updated octo (kaeru bumped 0.2.1→0.3.0; all additive).
+
+**Two standing user rules recorded** (also saved to cross-session memory): no emoji
+in code/logs; Conventional-Commits style (`feat:`/`fix:`/`doc:`/`chore:`), no
+Claude co-author trailer.
+
+**Directions agreed** (recorded in roadmap Capabilities):
+1. **Declarative skills** = next concrete build.
+2. **Proactivity = scheduler + memory routines** — reuse the scheduler; a routine
+   is a recurring system alarm (`{routine: "memory_reflection"}`, silent) vs a user
+   reminder; seed a base routine on startup; depends on kaeru's reflection primitive
+   (next kaeru release).
+3. **Graph (Phase 2) earns its keep** — user confirmed the payoff is *inter-stage
+   context*: the graph threads accumulated PEMRR context node-to-node (tier 2 of
+   [[context_memory_layering]]), vs today's one opaque turn.
+
+## [2026-06-28 23:41] feat | Loop scratchpad built; declarative skills designed
+
+Worked through "the loop should have its own context window." Landed on: kaeru stays
+a **tool** (operational+persistent memory); the loop gets a **super-operational
+scratchpad** — distinct from chat (a log) and kaeru (durable). Its value: makes
+multi-step tasks **verifiable** (done = every step `verified`, not "the model felt
+finished"). Honest framing: this is the known agent todo/plan pattern, just placed
+correctly; not novel.
+
+- **Built** `albert/src/scratchpad.rs`: channel-keyed in-memory store + 5 rig tools
+  (`scratchpad_goal/step/mark/note/clear`). Cogitator renders the current scratchpad
+  into the preamble each turn (like active_reminders); `run_agent` now takes the
+  channel and binds the scratchpad tools; BASE_PREAMBLE teaches usage. Builds clean;
+  emoji-free (also caught a stray `⏰` in a tracing log, removed — U+23F0 was outside
+  my earlier grep range). Design: [[loop_scratchpad]]. NOT yet exercised live (needs
+  the LLM path).
+- **Declarative skills designed** [[declarative_skills]]: SKILL.md dir (one dir per
+  skill), startup `SkillRegistry`, **catalog rendered each turn** (visibility),
+  **`load_skill` tool** pulls one body on demand (accessibility / progressive
+  disclosure — catalog is the index, body is the page, like kaeru structural recall).
+  kaeru may index metadata but doesn't own skills. Executable skills stay on the
+  forkd/sandbox track. Implementation is the next build.
+
+Layering now: chat (Octo, a log) | scratchpad (super-operational task state) | kaeru
+(durable memory, tool); plus a skills catalog (menu) + `load_skill` (page).
+
 ## [2026-06-21 23:56] task | Bus backpressure fix landed — GraphCogitator unblocked
 
 Implemented `octo_bus_backpressure_fix.md` in live octo (`~/code/personal/octo/`,
@@ -237,3 +290,46 @@ Marked the brief **done** (+ Outcome), struck the roadmap prereq, updated index.
 **No remaining Octo-core blockers for the GraphCogitator** — its three tools
 (kaeru-rig, octo-rig, graph-llm) are in hand and the steering primitive now
 exists. Next concrete move stays the GraphCogitator draft.
+
+## [2026-06-23 00:23] note | Reviewed colleague's two octo PRs; closing both, harvesting the best
+
+@widgetii opened LamantinAI/octo #1 (backpressure) and #2 (proactive loop). Read
+the code.
+
+- **#1 backpressure** — high-quality, correct (semaphore-slot true Block,
+  lock-released-before-await publish, no per-subscriber tasks, kept `subscribe_sync`
+  sig). But **duplicates ours** (`03467eb`, already in Albert) and **downgrades
+  `Steer`** (which we need). → close. Recorded its semaphore-`Block` design in this
+  brief as a **Phase-3 reference** (true never-drop control lane).
+- **#2 proactive loop** — strong, additive, loop-safe (`react_proactive`: chat
+  hard-excluded + `source==self` guard, filter-union anti-footgun, `NOOP`, per-kind
+  dedup history). Its `connectors/scheduler` is a *config-static timer* (`every`/
+  `after`/`timer.tick`/`timer.fire`); collides on path/name with our local dynamic
+  **alarms/reminders** scheduler (`2b52a44`, `alarm.fired` + `octo.scheduler.*`
+  control surface + disk persistence) — **we keep ours and extend it**. → close,
+  but **harvest the best code into ours** (router `PayloadPredicate` definite; the
+  proactive cogitator loop next, rewired onto our `alarm.fired`/`sensor.anomaly`).
+
+No GitHub token on the box (SSH only) → the user closes both on web with the
+drafted comments. Both PRs credited in-thread per plan.
+
+## [2026-06-28 22:04] note | Octo authz stack landed; handoff for Albert's Telegram auth
+
+Built a full authorization stack in octo (outside Albert) and wrote
+`octo_authz_handoff.md` as the next session's starting point. Albert path-deps the
+sibling octo checkout, so it's all available now (octo commits ahead of origin).
+
+- **Telegram edge ACL + factory** (`053d8c8`): per-chat allow-list dropped before
+  the bus (untrusted never reaches cognition); `ChannelMetadata.trust` + `role`
+  stamped; connector is now a `type="telegram"` factory for `octo.toml`.
+- **octolab config-driven** (`29e1124`): the reference wiring (octo.toml + factory)
+  to mirror in Albert.
+- **Runtime-mutable ACL** (`4e06b10`): `octo.telegram.{allow_chat,remove_chat,
+  list_chats}` control commands (manageable actor); owner-only `/allow` reflex
+  (deterministic, no LLM, gated on incoming `role==owner`).
+- **`Filter::with_min_trust`** (`8d7a15f`) general trust gate; **`ConnectorContext:
+  Clone`**.
+
+Next Albert move: wire authz into its Telegram channel (currently `new` =
+allow-all) — config-driven manifest with `owner_chat`, plus porting the `/allow`
+reflex into `AlbertCogitator`. Details + APIs on the handoff page.

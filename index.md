@@ -23,6 +23,16 @@ Catalog of pages. Thin by design; `log.md` is the authoritative journal.
 - `octo_bus_backpressure_fix.md` — **fix brief + outcome**: the one real Octo-core
   gap for the GraphCogitator (silent `Lagged` drop); phased fix, acceptance
   criteria, files. *(task — done, octo `03467eb`)*
+- `octo_authz_handoff.md` — **handoff / start here**: the Telegram authorization
+  stack landed in octo (edge ACL + factory, runtime-mutable ACL via control
+  commands, `/allow` reflex, trust floor); Albert's next move is to wire it into
+  its own Telegram channel. *(context)*
+- `loop_scratchpad.md` — **the agent's super-operational working object**: per-task
+  state the loop owns + renders each turn; makes multi-step tasks verifiable.
+  *(design — built in `albert/src/scratchpad.rs`)*
+- `declarative_skills.md` — **declarative skills design**: storage / infra /
+  visibility / accessibility, progressive disclosure (catalog + `load_skill`).
+  *(design — implementation next)*
 
 ## Sources (immutable)
 
@@ -34,4 +44,5 @@ Catalog of pages. Thin by design; `log.md` is the authoritative journal.
 ## Not modelled yet
 
 - Experience / Reflection layers (cognition internals) — beyond current scope.
-- Skills / sandbox execution (forkd) — deferred.
+- Executable skills / sandbox execution (forkd) — deferred (declarative skills are
+  designed, see `declarative_skills.md`).

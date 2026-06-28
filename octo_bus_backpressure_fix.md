@@ -147,6 +147,34 @@ follow-up supersedes a pending one = steering), and treat high-rate perception
   router / control `subscribe_sync` calls.
 - `octo-core/src/lib.rs` — bus tests live here; add burst + Steer tests.
 
+## Phase 3 reference — semaphore-slot true `Block` (from closed PR #1)
+
+A colleague (@widgetii) independently shipped a backpressure PR (LamantinAI/octo
+#1) the same week ours landed. We kept ours (already integrated in Albert, and it
+carries `Steer` — the steering primitive; PR #1 downgraded `Steer`/`Throttle` to
+`DropOldest`). PR #1 was closed, but **its `Block` design is worth keeping for our
+deferred Phase 3** (the never-drop control lane), which our impl punted on
+(best-effort Block only).
+
+Its approach (`bus_queue.rs`): replace the broadcast with a registry of
+per-subscriber bounded queues; `publish()` snapshots matching subscribers under a
+lock, **releases it**, then pushes to each. Each subscriber tracks free slots with
+a **`tokio::Semaphore` (permits = free space)**:
+
+- `Block` push = `space.acquire().await` then `permit.forget()`; `pop` does
+  `space.add_permits(1)`. So the publisher genuinely blocks until the slow
+  consumer drains — true end-to-end backpressure, with no lost-wakeup race
+  (semaphore handles fairness across concurrent publishers).
+- `close()` calls `space.close()` so a blocked publisher's `acquire()` returns
+  `Err` → unblocks on shutdown.
+
+Caveat we noted: their `publish()` awaits Block subscribers **in order**, so a slow
+Block consumer delays delivery of the *same* envelope to later subscribers (head-of-
+line within one publish) — inherent to true-Block on a fan-out, partly contained by
+publish-time filtering. For a Phase-3 control lane, the clean shape is likely a
+**separate never-drop subscription** (deep buffer or this semaphore-Block) for
+`octo.control.**` only, not a bus-wide Block.
+
 ## Connections
 
 - **Why it matters now:** [[context_memory_layering]] — staged cognition + steering.
