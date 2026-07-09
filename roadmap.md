@@ -94,15 +94,16 @@ connector set, so a new connector with a `description` lands in his hands with
   Tiers: WASM-first (Wasmtime/WASI, minimal-safe, à la moltis `wasm-calc`) → full
   runner connector (bubblewrap/landlock/container, picode-level) as an organ
   owning isolation below REST.
-- **Proactivity via scheduler + memory routines** (agreed 2026-06-28) — **reuse
-  the scheduler already built; no new substrate.** A *routine* = a recurring system
-  alarm distinguished by payload: `{ routine: "memory_reflection" }` (silent — the
-  agent works on memory, no user message) vs a user reminder `{ task, channel,
-  reply_via }`. `on_alarm` gets a routine branch; Albert **seeds a base routine on
-  startup** (like the owner is seeded in the ACL) so he wakes up with base
-  self-care. Depends on kaeru's **memory-reflection primitive (next kaeru
-  release)** — the routine plumbing can land now with a placeholder
-  (`synthesise`/`lint`/`improve`).
+- **Proactivity via scheduler + memory routines** — **built 2026-07-09.** Reuses
+  the scheduler; no new substrate. A *routine* = a recurring system alarm keyed by
+  payload `{ routine: "memory_reflection" }` (silent, no user message) vs a user
+  reminder `{ task, channel, reply_via }`. `on_alarm` routes routines to
+  `run_routine`; Albert **idempotently seeds** the base reflection routine on
+  startup (retry until the scheduler is up; `ALBERT_REFLECTION_SECS` override,
+  default 6h). The handler runs a silent reflection agent turn using
+  `kaeru_reflect` (shipped in kaeru v0.4.1) + `link`/`synthesise`. Verified live
+  (seed → fire → route → reflect). *Open:* seeding is "add if absent" — changing the
+  period needs clearing the alarm; a per-routine upsert is a later nicety.
 - **Cycle / Phase-2 graph** — the GraphCogitator splits today's single working-first
   turn into explicit PEMRR nodes. Value confirmed (user, 2026-06-28): **between
   stages the agent must have its accumulated context in front of it** — the graph's

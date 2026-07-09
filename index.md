@@ -33,6 +33,10 @@ Catalog of pages. Thin by design; `log.md` is the authoritative journal.
 - `declarative_skills.md` — **declarative skills design**: storage / infra /
   visibility / accessibility, progressive disclosure (catalog + `load_skill`).
   *(design — implementation next)*
+- `octo_connectors_handoff.md` — **handoff for an octo session**: a **generic
+  CalDAV** connector (`connectors/caldav/`, one crate → many calendars: Yandex now,
+  Google via OAuth2 later) + SMTP send (`connectors/smtp/`); env-as-tools organs,
+  zero cogitator change. *(task — open, octo-side)*
 
 ## Sources (immutable)
 

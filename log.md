@@ -269,6 +269,52 @@ correctly; not novel.
 Layering now: chat (Octo, a log) | scratchpad (super-operational task state) | kaeru
 (durable memory, tool); plus a skills catalog (menu) + `load_skill` (page).
 
+## [2026-07-09 22:46] chore | kaeru pinned to v0.4.1 (reflect); soul/memory design; octo connectors brief
+
+- **kaeru pinned to the v0.4.1 release** — `albert/Cargo.toml` kaeru-core/kaeru-rig
+  path deps → `git = "https://github.com/LamantinAI/kaeru", tag = "v0.4.1"`. Builds
+  (cozo recompiled from the git source, 2m). `kaeru_reflect` is present in 0.4.1 →
+  the memory-reflection routine is unblocked. (My local checkout had been on the
+  `ceounittt` fork without the tag; origin is now LamantinAI.)
+- **Soul/memory design settled** (OpenClaw's "reads all its files every request,
+  half a minute per request" anti-pattern):
+  - **Memory** — already solved: kaeru is curated, on-demand recall, NOT a
+    memory.md bulk-injected each turn. We don't have OpenClaw's problem.
+  - **Soul/instructions** — must be in the prompt every turn (they define the
+    agent; can't be on-demand), but must NOT be disk-read per request. Design:
+    **hold in RAM, hot-reload via mtime check** (stat each turn, re-read the body
+    only if changed). Keep the always-present core LEAN; push specialized behavior
+    to on-demand declarative skills. So: memory=kaeru on-demand, specialization=
+    skills on-demand, only a thin soul/instruction core always-present (in RAM).
+- **Octo connectors handoff written** [[octo_connectors_handoff]] — for a separate
+  octo session: `connectors/yandex/` (Yandex Calendar via CalDAV — reqwest WebDAV +
+  icalendar; list/create/delete events) + `connectors/smtp/` (generic send via
+  lettre; `email.send`). Both organs (env-as-tools), secrets via app-password env,
+  zero cogitator change; Albert wires them in main.rs like the scheduler.
+
+Next local builds queued: soul/instructions RAM+hot-reload; base reflect routine
+(now unblocked); declarative skills impl.
+
+## [2026-07-09 23:02] feat | Base memory-reflection routine (scheduler-driven)
+
+Albert's first proactive routine — reuses the scheduler, no new substrate.
+- `on_alarm` now checks the alarm payload for `routine`; `{ routine:
+  "memory_reflection" }` routes to `run_routine` (silent, no user message), else the
+  existing reminder path.
+- `run_routine("memory_reflection")` runs a silent reflection agent turn: prompt
+  "reflect on your memory", tools now include `kaeru_reflect` (v0.4.1) + `link` +
+  `synthesise`; it pulls the maintenance work-list and acts on it.
+- `seed_base_routine` (detached task on cogitator start) **idempotently** seeds the
+  reflection alarm: retries until the scheduler answers, checks list_alarms, adds
+  only if absent. Period via `ALBERT_REFLECTION_SECS` (default 6h).
+- **Verified live** (console, `ALBERT_REFLECTION_SECS=2`, dummy key): seed → every
+  2s fire → routed to `run_routine` → reflection turn (401 on the dummy key,
+  proving the plumbing). Cleaned the smoke-test alarm from `state/` so a real run
+  seeds a fresh 6h routine. Builds clean, emoji-free.
+
+Also pinned kaeru to v0.4.1 (committed `chore` in the code repo) — that's what
+shipped `kaeru_reflect`.
+
 ## [2026-06-21 23:56] task | Bus backpressure fix landed — GraphCogitator unblocked
 
 Implemented `octo_bus_backpressure_fix.md` in live octo (`~/code/personal/octo/`,
