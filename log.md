@@ -315,6 +315,32 @@ Albert's first proactive routine — reuses the scheduler, no new substrate.
 Also pinned kaeru to v0.4.1 (committed `chore` in the code repo) — that's what
 shipped `kaeru_reflect`.
 
+## [2026-07-09 20:30] feat | Config-as-data: albert.toml + hot-reloaded soul/system prompts
+
+Two moves the user asked for, both against the OpenClaw anti-pattern (re-reading
+big files every request):
+
+- **`albert.toml`** (config-as-data, like Octo's connector manifests). Path via
+  `ALBERT_CONFIG` (default: next to the binary, else the crate dir). Secrets stay
+  in env, **named in the TOML by their env-var name** (`openai_key_env`,
+  `token_env`) — so the file is committable. model / base_url / owner_chat /
+  reflection period / history / state paths / max_tool_turns all move out of code
+  and env into the TOML. Relative paths resolve against the config file's dir.
+- **soul.md + system.md** — the big `BASE_PREAMBLE` const leaves the code into two
+  files: `soul.md` (persona) + `system.md` (memory/reminders/scratchpad protocol).
+  Loaded into **RAM, hot-reloaded by mtime** (`stat` each turn, re-read a body only
+  when it changed) — not disk-read per request. Terse embedded fallback if a file
+  is missing. This resolves the A/B question → both files externalized.
+- Also: refactor pass earlier this session — cogitator split into `acl`/`routines`
+  (<500 lines/file), imports brace-grouped, leaf entities imported (no module paths
+  in code bodies). Recorded as durable Rust style rules in cross-session memory.
+
+**Migration note for the user:** `.env` now holds only secrets (`ALBERT_OPENAI_KEY`,
+`OCTO_TELEGRAM_TOKEN`) + optional `ALBERT_CONFIG`. `ALBERT_LLM_MODEL` / `_BASE_URL` /
+`_HISTORY` / `_REFLECTION_SECS` / `ALBERT_OWNER_CHAT` in `.env` are now **ignored** —
+their values live in `albert.toml`. In particular `[telegram].owner_chat` must be
+set in the TOML or the bot runs OPEN (with a warning).
+
 ## [2026-06-21 23:56] task | Bus backpressure fix landed — GraphCogitator unblocked
 
 Implemented `octo_bus_backpressure_fix.md` in live octo (`~/code/personal/octo/`,
