@@ -510,3 +510,16 @@ integrations. You implement every tool body + all safety. Decision recorded in
 files are a local faculty), workspace-jailed, we own path-safety; references
 `llm-coding-tools-rig` (community, rig ^0.28, unverified on 0.35), `rust-bash`, the
 joshmo article, [[openclaw_code_fs]]. Updated roadmap phase 2.
+
+## [2026-07-11 02:10] note | octo-code shape decided; llm-coding-tools-rig = reference
+
+Decisions this session (in [[file_code_tooling]] + roadmap): (1) `octo-code` is a
+**coding-tools module inside octo-rig**, not a separate crate, not a connector;
+(2) safety is **folder-level only — forkd PARKED**: work in a /tmp scratch jail,
+durable artifacts to a **storage connector** (organ, swappable local↔S3);
+(3) `llm-coding-tools-rig` pins rig ^0.28 — a resolver spike confirmed it pulls a
+second rig-core, so it can't be a dependency; under Apache-2.0 we **port it to rig
+0.35 as a reference implementation** and refactor to our conventions (framed as
+adaptation, not wholesale copy — per user); (4) the `rig_tool` macro is free-fn /
+stateless-only → use it for the new file tools, keep trait impls for stateful ones.
+Added maki, rust-bash, the macro to references.

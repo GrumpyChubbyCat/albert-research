@@ -81,18 +81,21 @@ wipe the live box."
    понимает"; the stepping stone to executable skills. **← built 2026-07-11**
    (`albert/src/skills.rs`; `[skills]` in albert.toml; examples daily-brief +
    decompose-task).
-2. **File workspace** — the coding foundation. Decided: an **`octo-code` rig-tools
-   crate** (sibling to octo-rig), **not a bus connector** — files are a synchronous
-   local faculty (like scratchpad/kaeru), not an async organ. `read`/`write`/`edit`
-   (string-replace)/`list`, confined to ONE workspace root (e.g. `/opt/albert/
-   workspace`), never the whole FS; we own the path-safety layer. rig ships no file
-   tools (only plumbing) — see [[file_code_tooling]]; mine `llm-coding-tools-rig` +
-   the joshmo "Rewriting Claude Code in Rust" pattern + [[openclaw_code_fs]] as
-   references. Prerequisite for meaningful code.
-3. **forkd — sandboxed execution** (the big node). WASM-first (Wasmtime/WASI,
-   minimal-safe) → full runner (bubblewrap/landlock/container). Both the code
-   component and executable skills land here: an **executable skill = declarative
-   SKILL.md (1) + scripts run in forkd (3)**. Isolation mandatory (root on VM).
+2. **File workspace** — the coding foundation. Decided: **`octo-code`, a coding-tools
+   module inside `octo-rig`** (not a separate crate, not a bus connector — files are a
+   synchronous local faculty like scratchpad/kaeru, not an async organ).
+   `read`/`write`/`edit` (string-replace)/`list`, jailed to a **/tmp scratch
+   workspace** (folder-level safety is enough now — reject `..`/absolute, atomic
+   writes), never the whole FS. rig ships no file tools (only plumbing); we **port
+   `llm-coding-tools-rig`** (Apache-2.0, a version behind on rig) to rig 0.35 and
+   refactor to our conventions, with the joshmo pattern + [[openclaw_code_fs]] as
+   references — see [[file_code_tooling]]. Durable artifacts go to a **storage
+   connector** (an organ, swappable local↔S3), not raw FS.
+3. **forkd — sandboxed execution** — **PARKED** (not needed yet). Folder-level
+   confinement (phase 2) covers the current need; a real code sandbox only becomes
+   necessary when Albert runs untrusted code. When revived: WASM-first (Wasmtime/WASI)
+   → full runner (bubblewrap/landlock/container); an **executable skill = declarative
+   SKILL.md (1) + scripts run in forkd**. Isolation mandatory (root on VM).
 4. **More connectors + web search** — parallel, cheap. The web-parser organ
    (Yandex+Playwright, agent-chooses-render), SMTP, more organs (env-as-tools,
    zero cogitator change).

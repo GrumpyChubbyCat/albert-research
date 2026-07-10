@@ -1,10 +1,10 @@
-# rig for file/code tools — plumbing only (phase 2 decision)
+# rig for file/code tools — plumbing only; build octo-code (phase 2)
 
 **Kind:** research note / decision
 **Informs:** [[roadmap]] (phase 2 file workspace, phase 3 forkd)
 **Builds on:** [[openclaw_code_fs]]
 **Status:** settled (verified against rig-core 0.35.0 local source + docs.rs 0.39.0 +
-the rig monorepo `crates/`, 2026-07-11)
+the rig monorepo `crates/` + a resolver spike, 2026-07-11)
 
 Question: does **rig** already have file/code tools — or do we build `octo-code`?
 
@@ -12,66 +12,72 @@ Question: does **rig** already have file/code tools — or do we build `octo-cod
 
 - **rig-core ships the tool machinery + exactly one tool.** The `Tool` trait,
   `ToolDyn`, `ToolSet`, `.tool()`, the native tool-loop (`max_turns` — default **0**,
-  must be set), MCP wiring (`tool/rmcp.rs`), and a `#[rig_tool]`/`tool_macro`
-  attribute (from `rig-derive`) that turns a plain fn into a `Tool`. The whole
-  `tools` module is one built-in: **`ThinkTool`** (a no-I/O scratchpad). No
-  read/write/edit/list/bash/exec anywhere. `loaders/` are RAG *document* loaders,
-  not agent actions.
+  must be set), MCP wiring (`tool/rmcp.rs`), and the `rig_tool`/`tool_macro` attribute
+  (from `rig-derive`). The whole `tools` module is one built-in: **`ThinkTool`** (a
+  no-I/O scratchpad). No read/write/edit/list/bash/exec anywhere. `loaders/` are RAG
+  *document* loaders, not agent actions.
 - **You implement every tool's `call` body; rig never touches the FS/shell.**
 - **No typed computer-use.** The Anthropic provider `ToolDefinition` has no `type`
   field, so `bash_2025*` / `text_editor_*` / `computer_*` server-defined tools can't
-  go through the typed `.tool()` path. Escape hatch only: `client.anthropic_beta(..)`
-  + raw `additional_params.tools` passthrough — rig won't type/validate/run it. And
-  it's moot for us: we're on **OpenRouter/DeepSeek**, not Anthropic-direct; OpenAI's
-  hosted `computer_use`/`file_search` (Responses API) is OpenAI-side + Operator-style
-  and equally N/A.
-- **The `crates/` monorepo audit** (19 crates): `rig-core` (machinery), `rig-derive`
+  go through the typed `.tool()` path (escape hatch only: `anthropic_beta` + raw
+  `additional_params.tools`, unrun/untyped). Moot for us anyway: OpenRouter/DeepSeek,
+  not Anthropic-direct; OpenAI hosted computer-use is OpenAI-side + Operator-style.
+- **`crates/` monorepo audit** (19 crates): `rig-core` (machinery), `rig-derive`
   (macros), `rig-memory` (conversation-history filtering — we have octo-history +
-  kaeru), and **16 vector-store/embeddings integrations** (bedrock, fastembed,
-  lancedb, milvus, mongodb, neo4j, postgres, qdrant, s3vectors, scylladb, sqlite,
-  surrealdb, vertexai, gemini-grpc, vectorize). Rig's weight is **RAG + tool-calling**;
-  zero agent action-tools.
+  kaeru), and **16 vector-store/embeddings integrations**. Rig's weight is
+  **RAG + tool-calling**; zero agent action-tools.
 
-So the intuition "rig has everything for computer-use" is **half true**: it has
-everything to *wire* tools (we already do — kaeru/scratchpad/skills), nothing that
-*is* a file/code tool. Computer-use = our code + our safety.
+So "rig has everything for computer-use" is **half true**: everything to *wire* tools
+(we already do — kaeru/scratchpad/skills), nothing that *is* a file/code tool.
+Computer-use = our code + our safety.
 
-## External references (mine, don't blind-adopt)
+## References — adapt, don't depend
 
-- **`llm-coding-tools-rig`** (community crate) — ready rig `Tool` impls: `ReadTool`,
+- **`llm-coding-tools-rig`** v0.1.0 (Apache-2.0) — ready rig `Tool` impls: `ReadTool`,
   `WriteTool`, `EditTool`, `GlobTool`, `GrepTool`, `BashTool`, `WebFetchTool`,
-  `TodoRead/WriteTool`, with sandboxed/unrestricted modes (`.tool(ReadTool::<true>::
-  new())`). **Targets rig-core ^0.28** — compat with our 0.35 unverified; its
-  "sandbox" unaudited. A strong *reference*, a risky *dependency*.
-- **`rust-bash`** — a sandboxed bash interpreter over a virtual FS; a possible
-  backend reference for phase-3 exec.
-- **"Rewriting Claude Code in Rust"** (0xPlaygrounds/joshmo, DEV.to) — defines
-  `ReadFile`/`WriteFile`/`Bash` as rig `Tool`s over `std::fs` + `tokio::process`. The
-  canonical "define your own, rig runs the loop" pattern — exactly our path.
+  `TodoRead/WriteTool` (sandboxed/unrestricted modes). **Pins `rig-core ^0.28`** → a
+  resolver spike confirmed it pulls a *second* rig-core (0.28 beside our 0.35); its
+  0.28 `Tool` type can't install on our 0.35 agent. **Not a dependency** — but under
+  Apache-2.0 it stands as a **permissively-licensed reference implementation** of
+  exactly the tool surface we need. The plan: **port it to rig 0.35** (a version it
+  predates) and reshape it to our conventions and safety model, with attribution.
+  Deriving from a proven reference is sounder than starting from a blank page.
+- **`rig_tool` / `tool_macro`** (rig-derive, re-exported by rig-core) — attribute
+  macro turning a **free function** into a `Tool`. **Stateless only** (unit-like
+  struct; cannot capture `Arc`/handles). Use it for the **new stateless coding tools**
+  (workspace root from const/env, not per-instance state); keep **trait impls for
+  stateful tools** (scratchpad/skills/kaeru/dispatch hold store handles).
+- **`rust-bash`** — a sandboxed bash interpreter over a virtual FS; a backend
+  reference for a later exec tool.
+- **`maki`** (tontinton/maki) — a token-efficient Rust coding agent (code index, bash
+  permission system, multi-agent delegation; `code_execution` = an in-process
+  time/mem-limited interpreter sandbox, not containers/WASM). Like OpenClaw: a whole
+  agent to mine for patterns, not a library to adopt.
+- **"Rewriting Claude Code in Rust"** (0xPlaygrounds/joshmo, DEV.to) — the canonical
+  `ReadFile`/`WriteFile`/`Bash` rig-`Tool` pattern over `std::fs`/`tokio::process`.
 
-## Decision: build `octo-code` (rig-tools crate), informed by the above
+## Decision (2026-07-11)
 
-- **A crate of rig `Tool` impls, sibling to `octo-rig`** — not a bus connector.
-  File/code are **synchronous, local faculties** the agent invokes (like
-  scratchpad/kaeru), not async external organs that push events (telegram/calendar/
-  scheduler). A connector would add a bus round-trip per file op for no gain. Install
-  it on the agent via `.tool(..)` like `kaeru_rig`/`octo_rig`.
-- **Own the safety layer.** Albert runs as **root on the VM** with no docker to lean
-  on → the workspace-jail + path-safety (from [[openclaw_code_fs]]: reject
-  `..`/absolute, atomic `O_EXCL`/`O_NOFOLLOW`/`0o600`, one workspace root) is
-  *the* safety for phase 2 and must be ours, audited — not a third-party crate's
-  unverified "sandbox mode."
-- **Phase 2 = files only** (`read`/`write`/`edit` string-replace/`list`, workspace-
-  jailed). **Phase 3 = exec** (`bash`) behind the real sandbox (forkd: bubblewrap/
-  landlock or WASM) — possibly the one place an organ/connector fits, since the
-  sandbox is a heavy supervised substrate.
-- **Lean: B (build) informed by A (mine `llm-coding-tools-rig` + joshmo as
-  starting points).** Blind-adopting a third-party FS/exec layer for a root agent is
-  the one place not to outsource. Cheap first signal worth taking: check whether
-  `llm-coding-tools-rig` even compiles against rig 0.35 — if it does, it's a faster
-  reference to read.
+- **`octo-code` = a module inside `octo-rig`** — not a separate crate, not a bus
+  connector. octo-rig becomes the home of "rig tools octo agents use": the existing
+  dispatch bridge plus a **coding-tools** module (file `read`/`write`/`edit`/`list`,
+  later glob/grep). Built by **adapting `llm-coding-tools-rig`** (Apache-2.0) to rig
+  0.35, using the `rig_tool` macro where the tool is stateless.
+- **Safety = folder-level only; forkd NOT needed yet.** The current need is a jailed
+  working folder, not a code sandbox. Albert generates working artifacts in a **/tmp
+  scratch workspace**, path-confined (reject `..`/absolute, atomic writes per
+  [[openclaw_code_fs]]) — that confinement *is* the safety. Revisit forkd/exec-sandbox
+  only when we actually run untrusted code.
+- **Durable artifacts → a `storage` connector (an octo organ), not raw FS.** Finished
+  outputs are handed to a storage connector reached via dispatch (env-as-tools),
+  backend **swappable: a local dir now, an S3-compatible store later**. The split:
+  ephemeral work in /tmp (octo-code tools) vs. durable results in storage (an organ),
+  cloud-portable from day one.
 
-## Caveat
+- **House style.** The reference is not copied verbatim — it is **ported to rig 0.35
+  and refactored to our conventions**: files ≤~500 lines, brace-grouped leaf imports
+  (no module paths in bodies), **no `anyhow`** (octo `OctoError`/thiserror), no emoji,
+  `rig_tool` macro for the stateless tools. Apache-2.0 attribution kept.
 
-`llm-coding-tools-rig` 0.35 compatibility and the realness of its "sandbox" are
-**unverified**; treat as reference until checked.
+**Two deliverables:** (1) **octo-code** (coding tools in octo-rig, /tmp-jailed);
+(2) a **storage connector** (swappable local↔S3). **forkd is parked.**
