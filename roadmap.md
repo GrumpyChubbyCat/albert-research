@@ -64,6 +64,36 @@ Each is an **organ** (connector) unless noted — Albert's action space = the
 connector set, so a new connector with a `description` lands in his hands with
 **zero cogitator change** (proven by the scheduler).
 
+### The capability plan (sequenced, agreed 2026-07-11)
+
+**Insight:** files + code + executable-skills are *one stack*, not three tasks —
+files = the material, **forkd** = the engine, **skills** = the packaging (a
+SKILL.md = instructions + optional scripts run by forkd). **Hard constraint:**
+Albert runs as **root on the VM**, so code execution MUST be sandboxed and file
+work MUST be confined to a workspace root — not optional, it's "don't let the model
+wipe the live box."
+
+1. **Declarative skills** — make Albert *understand* skills. A `skills/` folder of
+   SKILL.md; loaded into a RAM cache (~5 active by default, LRU), catalog always
+   visible, list + apply. No execution → safe. Closes "он про скилы ничего не
+   понимает"; the stepping stone to executable skills. **← built 2026-07-11**
+   (`albert/src/skills.rs`; `[skills]` in albert.toml; examples daily-brief +
+   decompose-task).
+2. **File workspace** — the coding foundation. A bounded `fs` organ (read/write/
+   edit/list) confined to ONE workspace root (e.g. `/opt/albert/workspace`), never
+   the whole FS. Prerequisite for meaningful code.
+3. **forkd — sandboxed execution** (the big node). WASM-first (Wasmtime/WASI,
+   minimal-safe) → full runner (bubblewrap/landlock/container). Both the code
+   component and executable skills land here: an **executable skill = declarative
+   SKILL.md (1) + scripts run in forkd (3)**. Isolation mandatory (root on VM).
+4. **More connectors + web search** — parallel, cheap. The web-parser organ
+   (Yandex+Playwright, agent-chooses-render), SMTP, more organs (env-as-tools,
+   zero cogitator change).
+
+Dependencies: 1 & 2 are independent + cheap; 3 is heavy and carries executable
+skills (1+3) and full code (2+3); 4 is parallel. **Start: 1.** (Detailed bullets
+below.)
+
 - **Web search + parse** — *user is building it.* One `octo-connector-web` organ:
   `web.search { engine: yandex|google, query }` + `web.fetch { url, render:
   auto|http|browser }`. **The agent chooses Playwright via the `render` param**
@@ -87,12 +117,16 @@ connector set, so a new connector with a `description` lands in his hands with
   cogitator equips; mind-side, no exec, metadata can live in kaeru) vs *executable*
   (code → needs the sandbox substrate below). **Declarative: design worked out**
   ([[declarative_skills]] — storage/infra/visibility/accessibility, progressive
-  disclosure); **implementation is the next build.**
+  disclosure); **implementation IN PROGRESS 2026-07-11** — declarative-only:
+  `skills/` folder, RAM cache of ~5 active (LRU), catalog always shown, `skill_list`
+  + `skill_apply`. See the sequenced plan (phase 1) above.
 - **Code (minimal) + executable skills** — converge on one **sandboxed execution
   substrate** = the reactivated **forkd** (see Deferred). Even "minimal" code needs
-  real isolation (landscape lesson; OpenClaw's picode runs in a docker sandbox).
-  Tiers: WASM-first (Wasmtime/WASI, minimal-safe, à la moltis `wasm-calc`) → full
-  runner connector (bubblewrap/landlock/container, picode-level) as an organ
+  real isolation (landscape lesson; OpenClaw embeds **PI** = `pi-coding-agent` for
+  files/code and wraps it in a docker/ssh sandbox: network `none`, read-only root,
+  cap-drop all, workspace opt-in — *not* a thing called "picode"; see
+  [[openclaw_code_fs]]). Tiers: WASM-first (Wasmtime/WASI, minimal-safe, à la moltis
+  `wasm-calc`) → full runner connector (bubblewrap/landlock/container) as an organ
   owning isolation below REST.
 - **Proactivity via scheduler + memory routines** — **built 2026-07-09.** Reuses
   the scheduler; no new substrate. A *routine* = a recurring system alarm keyed by

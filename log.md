@@ -269,6 +269,38 @@ correctly; not novel.
 Layering now: chat (Octo, a log) | scratchpad (super-operational task state) | kaeru
 (durable memory, tool); plus a skills catalog (menu) + `load_skill` (page).
 
+## [2026-07-10 02:07] note | Albert deployed LIVE on nl-vmnano — all connectors working end-to-end
+
+Milestone: Albert runs as a real systemd service on `nl-vmnano` (2c/2G, Ubuntu 24
+x86, root), and a live Telegram conversation confirmed the whole stack.
+
+- **octo → git deps** (pinned rev, `LamantinAI/octo`) — user's call; the reorg
+  (`components/`) is a non-issue via git. kaeru already git-pinned (v0.4.1).
+- **Connectors config-driven** (octolab pattern): `register_connector_type` +
+  `from_config_file(config/octo.toml)` → Telegram (edge ACL) + generic CalDAV
+  calendar, each from a manifest. Telegram code-wiring removed; `/allow` reflex kept.
+- **Deploy**: build release **locally** (target too small to compile cozo/rig),
+  ship the binary. Local == target (x86_64 Ubuntu 24.04, glibc 2.39) → no cross.
+  `/opt/albert/{albert, albert.toml, soul.md, system.md, config/, .env, state/,
+  kaeru/}`; systemd `albert.service` (EnvironmentFile, Restart=always). Made the
+  connector-manifest path a config value (was baked to CARGO_MANIFEST_DIR — broke
+  on relocation). Optimized release profile (lto/cu1/strip → 39M).
+- **Verified live**: owner ACL (359849154), reminders/scheduler + reflection routine
+  (idempotent seed survives restart), and **calendar end-to-end** — a "what's on my
+  calendar?" turn dispatched `calendar.list_events`, the CalDAV connector auth'd
+  against Yandex (PROPFIND 207) and returned "empty". Gotcha fixed live: the octo
+  `.env` Telegram token was the wrong bot; real token is `@albert_lamantin_ai_bot`.
+- **History squashed** to one clean commit + force-pushed (the path-dep Cargo.toml
+  was "позор"). README + `docs/` (architecture/configuration/structure/deploy) +
+  LICENSE shipped. Repo keeps placeholders (owner_chat, yandex login); real values
+  only on the VM.
+
+**Next (user, later):** a `contrib/` folder and a `.deb` package.
+
+**Note for future:** the bot's chat replies use emoji (the model's style) — fine per
+the no-emoji rule (that's code/logs, not chat), but a one-line `system.md` tweak
+could curb it if the user wants a drier persona.
+
 ## [2026-07-09 22:46] chore | kaeru pinned to v0.4.1 (reflect); soul/memory design; octo connectors brief
 
 - **kaeru pinned to the v0.4.1 release** — `albert/Cargo.toml` kaeru-core/kaeru-rig
@@ -405,3 +437,54 @@ sibling octo checkout, so it's all available now (octo commits ahead of origin).
 Next Albert move: wire authz into its Telegram channel (currently `new` =
 allow-all) — config-driven manifest with `owner_chat`, plus porting the `/allow`
 reflex into `AlbertCogitator`. Details + APIs on the handoff page.
+
+## [2026-07-10 note] Octo CalDAV connector landed; handoff for Albert's calendar
+
+Built a generic CalDAV connector + reusable auth crate in octo (outside Albert)
+and wrote `octo_caldav_handoff.md`. Albert path-deps the sibling octo checkout, so
+it's available now (octo commits on `main`, pushed to origin).
+
+- **`octo-http-auth`** (`3d91f40`, at `components/http-auth/`): reusable
+  `AuthConfig` (basic/bearer/oauth2/none, secrets via named env vars) + `HttpAuth`
+  runtime (oauth2 refresh, token cache). Shared by CalDAV/SMTP/HTTP.
+- **`octo-connector-caldav`** (`c346ed9`): generic CalDAV (RFC 4791), one crate
+  many calendars, `type="caldav"` factory. Collection URL **discovered** from a
+  `base_url` (PROPFIND principal → home-set → VEVENT calendar), so config is just
+  login+password+base_url. Commands: `calendar.{list,create,delete}_event`.
+- **`components/` regroup** (`94ed695`): octo-history + octo-http-auth moved under
+  `components/`; crate names/imports unchanged.
+
+Validated live against Yandex (discovery + create/list/delete round-trip).
+
+Next Albert move: enable+configure a calendar — register the `caldav` factory in
+`main.rs`, add a `calendar.toml` manifest (Yandex base_url + app-password env).
+Reminders (VALARM poll → scheduler) and Google oauth2 are deferred follow-ups.
+Details + command schemas on the handoff page.
+
+## [2026-07-11 00:30] note | Capability plan sequenced (files/code/skills/web)
+
+Recorded the agreed sequenced plan in [[roadmap]] (§ "The capability plan"). Key
+insight: files + code + executable-skills are one stack (files = material, forkd =
+engine, skills = packaging). Hard constraint captured: Albert runs as **root on the
+VM** → code execution must be sandboxed, file work confined to a workspace root.
+Order: (1) declarative skills → (2) file workspace → (3) forkd sandbox → (4) more
+connectors + web, with (4) parallel.
+
+## [2026-07-11 00:32] note | Declarative skills built (phase 1)
+
+Built phase 1 (`albert/src/skills.rs`, ~250 lines). A `skills/<name>/SKILL.md`
+folder: frontmatter (name/description) → catalog shown in the preamble each turn;
+`skill_list` + `skill_apply` tools; an applied skill's body loads into an LRU RAM
+cache (default 5, `[skills] cache` in albert.toml) and stays active (rendered in the
+preamble) until evicted. No execution — declarative only. Ships two example skills
+(daily-brief, decompose-task). Built clean; smoke-run confirmed `skills=2` loaded.
+Committed + pushed (`98853a0`). Closes "он про скилы ничего не понимает".
+
+## [2026-07-11 00:35] note | OpenClaw file/code research — "picode" = PI
+
+Ran a sub-agent to verify how OpenClaw codes / touches the filesystem (user heard
+"picode"). Finding: **no such thing** — it is **PI** (`pi-coding-agent`, Mario
+Zechner) embedded in-process; OpenClaw adds workspace path-confinement + a docker/
+ssh sandbox. Full note: [[openclaw_code_fs]] (read/write/edit(string-replace)/bash
+quartet; path-safety primitives; sandbox posture defaults; `tool_call` permission
+gate). Feeds roadmap phases 2-3; corrected the stale "picode" mention in [[roadmap]].

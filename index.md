@@ -27,6 +27,10 @@ Catalog of pages. Thin by design; `log.md` is the authoritative journal.
   stack landed in octo (edge ACL + factory, runtime-mutable ACL via control
   commands, `/allow` reflex, trust floor); Albert's next move is to wire it into
   its own Telegram channel. *(context)*
+- `octo_caldav_handoff.md` — **handoff**: the generic CalDAV connector + reusable
+  `octo-http-auth` landed in octo (discovery from a server root, list / create /
+  delete events, factory `type = "caldav"`, multi-account); Albert's next move is
+  to enable and configure a calendar (Yandex). *(context)*
 - `loop_scratchpad.md` — **the agent's super-operational working object**: per-task
   state the loop owns + renders each turn; makes multi-step tasks verifiable.
   *(design — built in `albert/src/scratchpad.rs`)*
