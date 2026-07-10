@@ -488,3 +488,12 @@ Zechner) embedded in-process; OpenClaw adds workspace path-confinement + a docke
 ssh sandbox. Full note: [[openclaw_code_fs]] (read/write/edit(string-replace)/bash
 quartet; path-safety primitives; sandbox posture defaults; `tool_call` permission
 gate). Feeds roadmap phases 2-3; corrected the stale "picode" mention in [[roadmap]].
+
+## [2026-07-11 00:50] note | Skills refinement — catalog in front, bodies on demand
+
+Design correction (user): don't inject applied skill bodies into the preamble — the
+name+description (catalog) belongs in front, the whole body is loaded only when
+needed. So the earlier "stays active, rendered in the preamble" behaviour is dropped:
+the preamble now carries only the catalog; `skill_apply` returns the body on demand
+and the LRU (default 5) is a pure **read-through RAM cache** (fast re-apply, no disk
+read). `SkillStore::active()` removed. Committed `260b0ae`.

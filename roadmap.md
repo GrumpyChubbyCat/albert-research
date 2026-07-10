@@ -74,8 +74,10 @@ work MUST be confined to a workspace root — not optional, it's "don't let the 
 wipe the live box."
 
 1. **Declarative skills** — make Albert *understand* skills. A `skills/` folder of
-   SKILL.md; loaded into a RAM cache (~5 active by default, LRU), catalog always
-   visible, list + apply. No execution → safe. Closes "он про скилы ничего не
+   SKILL.md; the **catalog (name + description) is in front each turn**, bodies
+   loaded on demand via `skill_apply` (LRU read-through cache of ~5, so a whole skill
+   never clutters context). List + apply. No execution → safe. Closes "он про скилы
+   ничего не
    понимает"; the stepping stone to executable skills. **← built 2026-07-11**
    (`albert/src/skills.rs`; `[skills]` in albert.toml; examples daily-brief +
    decompose-task).
@@ -117,9 +119,10 @@ below.)
   cogitator equips; mind-side, no exec, metadata can live in kaeru) vs *executable*
   (code → needs the sandbox substrate below). **Declarative: design worked out**
   ([[declarative_skills]] — storage/infra/visibility/accessibility, progressive
-  disclosure); **implementation IN PROGRESS 2026-07-11** — declarative-only:
-  `skills/` folder, RAM cache of ~5 active (LRU), catalog always shown, `skill_list`
-  + `skill_apply`. See the sequenced plan (phase 1) above.
+  disclosure); **built 2026-07-11** — declarative-only: `skills/` folder, catalog
+  (name + description) shown each turn, bodies loaded on demand (`skill_apply`) with
+  an LRU read-through cache of ~5, `skill_list` + `skill_apply`. See the sequenced
+  plan (phase 1) above.
 - **Code (minimal) + executable skills** — converge on one **sandboxed execution
   substrate** = the reactivated **forkd** (see Deferred). Even "minimal" code needs
   real isolation (landscape lesson; OpenClaw embeds **PI** = `pi-coding-agent` for
