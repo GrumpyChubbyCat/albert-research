@@ -497,3 +497,16 @@ needed. So the earlier "stays active, rendered in the preamble" behaviour is dro
 the preamble now carries only the catalog; `skill_apply` returns the body on demand
 and the LRU (default 5) is a pure **read-through RAM cache** (fast re-apply, no disk
 read). `SkillStore::active()` removed. Committed `260b0ae`.
+
+## [2026-07-11 01:30] note | rig has no file/code tools — phase-2 = build octo-code
+
+Researched (local rig-core 0.35.0 source + docs.rs 0.39 + monorepo `crates/`)
+whether rig ships file/code/computer-use tools. It does not: only the `Tool`
+machinery + one no-I/O `ThinkTool`; no typed computer-use (Anthropic provider has no
+tool `type` field; OpenAI hosted computer-use is OpenAI-side + N/A on OpenRouter/
+DeepSeek); the 19 monorepo crates are core/derive/memory + 16 vector-store
+integrations. You implement every tool body + all safety. Decision recorded in
+[[file_code_tooling]]: phase 2 = **`octo-code` rig-tools crate** (not a connector —
+files are a local faculty), workspace-jailed, we own path-safety; references
+`llm-coding-tools-rig` (community, rig ^0.28, unverified on 0.35), `rust-bash`, the
+joshmo article, [[openclaw_code_fs]]. Updated roadmap phase 2.

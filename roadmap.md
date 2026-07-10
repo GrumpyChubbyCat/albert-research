@@ -81,9 +81,14 @@ wipe the live box."
    понимает"; the stepping stone to executable skills. **← built 2026-07-11**
    (`albert/src/skills.rs`; `[skills]` in albert.toml; examples daily-brief +
    decompose-task).
-2. **File workspace** — the coding foundation. A bounded `fs` organ (read/write/
-   edit/list) confined to ONE workspace root (e.g. `/opt/albert/workspace`), never
-   the whole FS. Prerequisite for meaningful code.
+2. **File workspace** — the coding foundation. Decided: an **`octo-code` rig-tools
+   crate** (sibling to octo-rig), **not a bus connector** — files are a synchronous
+   local faculty (like scratchpad/kaeru), not an async organ. `read`/`write`/`edit`
+   (string-replace)/`list`, confined to ONE workspace root (e.g. `/opt/albert/
+   workspace`), never the whole FS; we own the path-safety layer. rig ships no file
+   tools (only plumbing) — see [[file_code_tooling]]; mine `llm-coding-tools-rig` +
+   the joshmo "Rewriting Claude Code in Rust" pattern + [[openclaw_code_fs]] as
+   references. Prerequisite for meaningful code.
 3. **forkd — sandboxed execution** (the big node). WASM-first (Wasmtime/WASI,
    minimal-safe) → full runner (bubblewrap/landlock/container). Both the code
    component and executable skills land here: an **executable skill = declarative
