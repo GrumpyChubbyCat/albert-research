@@ -58,11 +58,12 @@ Computer-use = our code + our safety.
 
 ## Decision (2026-07-11)
 
-- **`octo-code` = a module inside `octo-rig`** — not a separate crate, not a bus
-  connector. octo-rig becomes the home of "rig tools octo agents use": the existing
-  dispatch bridge plus a **coding-tools** module (file `read`/`write`/`edit`/`list`,
-  later glob/grep). Built by **adapting `llm-coding-tools-rig`** (Apache-2.0) to rig
-  0.35, using the `rig_tool` macro where the tool is stateless.
+- **`octo-code` = its own crate** in the octo workspace, wired into `octo-rig` behind
+  a **`code` feature** — `octo-rig = { features = ["code"] }` pulls `octo-code` as an
+  optional dependency and exposes its tools. Not a bus connector. The coding tools
+  (file `read`/`write`/`edit`/`list`, later glob/grep) live in octo-code; octo-rig
+  keeps its dispatch bridge and opts them in. Built by **porting `llm-coding-tools-rig`**
+  (Apache-2.0) to rig 0.35, `rig_tool` macro where the tool is stateless.
 - **Safety = folder-level only; forkd NOT needed yet.** The current need is a jailed
   working folder, not a code sandbox. Albert generates working artifacts in a **/tmp
   scratch workspace**, path-confined (reject `..`/absolute, atomic writes per
@@ -79,5 +80,6 @@ Computer-use = our code + our safety.
   (no module paths in bodies), **no `anyhow`** (octo `OctoError`/thiserror), no emoji,
   `rig_tool` macro for the stateless tools. Apache-2.0 attribution kept.
 
-**Two deliverables:** (1) **octo-code** (coding tools in octo-rig, /tmp-jailed);
-(2) a **storage connector** (swappable local↔S3). **forkd is parked.**
+**Two deliverables:** (1) **octo-code** (its own crate; coding tools, /tmp-jailed;
+wired via octo-rig's `code` feature); (2) a **storage connector** (swappable
+local↔S3). **forkd is parked.**

@@ -81,9 +81,10 @@ wipe the live box."
    понимает"; the stepping stone to executable skills. **← built 2026-07-11**
    (`albert/src/skills.rs`; `[skills]` in albert.toml; examples daily-brief +
    decompose-task).
-2. **File workspace** — the coding foundation. Decided: **`octo-code`, a coding-tools
-   module inside `octo-rig`** (not a separate crate, not a bus connector — files are a
-   synchronous local faculty like scratchpad/kaeru, not an async organ).
+2. **File workspace** — the coding foundation. Decided: **`octo-code`, its own crate**
+   wired into `octo-rig` behind a **`code` feature** (`octo-rig = { features =
+   ["code"] }` pulls it as an optional dep) — not a bus connector; files are a
+   synchronous local faculty like scratchpad/kaeru, not an async organ.
    `read`/`write`/`edit` (string-replace)/`list`, jailed to a **/tmp scratch
    workspace** (folder-level safety is enough now — reject `..`/absolute, atomic
    writes), never the whole FS. rig ships no file tools (only plumbing); we **port

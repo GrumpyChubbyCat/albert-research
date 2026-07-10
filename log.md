@@ -523,3 +523,10 @@ second rig-core, so it can't be a dependency; under Apache-2.0 we **port it to r
 adaptation, not wholesale copy — per user); (4) the `rig_tool` macro is free-fn /
 stateless-only → use it for the new file tools, keep trait impls for stateful ones.
 Added maki, rust-bash, the macro to references.
+
+## [2026-07-11 02:20] correction | octo-code is its own crate, gated by octo-rig `code` feature
+
+Refined (user): octo-code is **not a module inside octo-rig** — it is its **own crate**
+in the octo workspace, pulled in when you enable octo-rig's **`code` feature**
+(`octo-rig = { features = ["code"] }` → optional `dep:octo-code`, tools re-exported).
+Updated [[file_code_tooling]] + roadmap phase 2.
