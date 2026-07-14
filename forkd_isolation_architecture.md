@@ -139,6 +139,23 @@ Design points to honor when building forkd:
   namespace is enabled, the workspace must be **explicitly bind-mounted** in or it
   vanishes from the sandbox — the bind is the mechanism.
 
+## Skills folder — mounted read-only, not copied
+
+A skill is a folder (`skills/<name>/`) that may bundle scripts and binary assets
+(fonts / images / data) — things that **cannot** be read into the model's context,
+only run or loaded **by path** ([[declarative_skills]] § Bundled resources). So the
+forkd sandbox gets the **skills root bind-mounted read-only** alongside the
+read-write session workspace: a skill's `scripts/*` run in place and its assets load
+by path — exactly as octo-code reads a skill's *informational* files in place via
+`skill_file`. **No materialization, no per-file cache — the mount is the access.**
+
+This extends the shared-workspace principle octo is already built on (the octo files
+/ storage landing: one shared workspace, bytes by reference — [[octo_files_and_workspace_handoff]]):
+the sandbox mounts **workspace (rw) + skills (ro)**. A materialization-and-cache step
+would only re-solve, worse, what a read-only bind-mount gives for free; it is
+warranted **only for a remote skill store** (cloud/S3), never for local skills that
+are already on disk.
+
 ## Where this sits on the roadmap
 
 - **Now (phase 2):** file tools are safe by folder-confinement alone — no forkd.
