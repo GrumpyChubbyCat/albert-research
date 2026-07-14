@@ -41,6 +41,22 @@ Catalog of pages. Thin by design; `log.md` is the authoritative journal.
   CalDAV** connector (`connectors/caldav/`, one crate → many calendars: Yandex now,
   Google via OAuth2 later) + SMTP send (`connectors/smtp/`); env-as-tools organs,
   zero cogitator change. *(task — open, octo-side)*
+- `forkd_isolation_architecture.md` — **phase-3 design**: forkd = a supervised
+  connector (not in-process) running untrusted scripts; two sandboxes (host←agent,
+  agent←code), three isolation layers (L1/L2/L3), subprocess+bwrap **not WASM**,
+  nl-vmnano deploy. *(design — forkd parked until untrusted code)*
+- `lamantin_four_pillars.md` — **productization requirements**: SQLite per channel,
+  router-enforced multitenancy, per-user isolation, router as access authority; how
+  each maps onto Octo's edge ACL / octo-history / forkd L3. *(architecture — mostly
+  forward-looking)*
+- `zendriver_browser.md` — **library candidate**: Rust-native stealth browser, the
+  alternative to a Playwright(Node) sidecar for the web-parser organ (runs under
+  forkd). *(scratch — pick at build time)*
+- `octo_files_and_workspace_handoff.md` — **handoff / integration task**: octo-code
+  file tools + storage connector (put/get/list/delete + promote/checkout) + Telegram
+  message coalescing (`InboundMessage`) + file transfer, all over a shared workspace
+  (`octo-workspace`). Bytes by reference, never through the model; Albert wires the
+  root + factories + two cogitator arms. *(context)*
 
 ## Sources (immutable)
 
@@ -52,5 +68,6 @@ Catalog of pages. Thin by design; `log.md` is the authoritative journal.
 ## Not modelled yet
 
 - Experience / Reflection layers (cognition internals) — beyond current scope.
-- Executable skills / sandbox execution (forkd) — deferred (declarative skills are
-  designed, see `declarative_skills.md`).
+- Executable skills / sandbox execution (forkd) — **designed, parked** (see
+  `forkd_isolation_architecture.md`); declarative skills built, see
+  `declarative_skills.md`.

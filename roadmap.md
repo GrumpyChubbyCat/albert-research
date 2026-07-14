@@ -81,22 +81,34 @@ wipe the live box."
    понимает"; the stepping stone to executable skills. **← built 2026-07-11**
    (`albert/src/skills.rs`; `[skills]` in albert.toml; examples daily-brief +
    decompose-task).
-2. **File workspace** — the coding foundation. Decided: **`octo-code`, its own crate**
-   wired into `octo-rig` behind a **`code` feature** (`octo-rig = { features =
-   ["code"] }` pulls it as an optional dep) — not a bus connector; files are a
-   synchronous local faculty like scratchpad/kaeru, not an async organ.
-   `read`/`write`/`edit` (string-replace)/`list`, jailed to a **/tmp scratch
-   workspace** (folder-level safety is enough now — reject `..`/absolute, atomic
-   writes), never the whole FS. rig ships no file tools (only plumbing); we **port
-   `llm-coding-tools-rig`** (Apache-2.0, a version behind on rig) to rig 0.35 and
-   refactor to our conventions, with the joshmo pattern + [[openclaw_code_fs]] as
-   references — see [[file_code_tooling]]. Durable artifacts go to a **storage
-   connector** (an organ, swappable local↔S3), not raw FS.
+2. **File workspace** — the coding foundation. **`octo-code` built (in octo) +
+   INTEGRATED into Albert 2026-07-15.** Own crate, file tools `read`/`write`/`edit`
+   (string-replace)/`list`/`glob`/`grep` as rig tools (not a connector — a local
+   faculty like scratchpad/kaeru), jailed to `$OCTO_CODE_WORKSPACE` (folder-level
+   safety; ported from `llm-coding-tools-rig` to rig 0.35). Albert: git-dep on
+   octo-code, `code_tools!` in the cogitator, `[code] workspace` in albert.toml →
+   exported + created in main.rs. Verified (workspace resolves + created, clean
+   start). **Still pending** (deferred slice, see [[octo_files_and_workspace_handoff]]):
+   the **storage connector** (durable artifacts, local↔S3 — needs base_dir/workspace
+   path coordination) and **Telegram file transfer + multimodal `InboundMessage` /
+   `chat.send_file`** (has a vision decision). See [[file_code_tooling]].
 3. **forkd — sandboxed execution** — **PARKED** (not needed yet). Folder-level
    confinement (phase 2) covers the current need; a real code sandbox only becomes
-   necessary when Albert runs untrusted code. When revived: WASM-first (Wasmtime/WASI)
-   → full runner (bubblewrap/landlock/container); an **executable skill = declarative
-   SKILL.md (1) + scripts run in forkd**. Isolation mandatory (root on VM).
+   necessary when Albert runs untrusted code. Full design in
+   [[forkd_isolation_architecture]]: forkd is a **connector, not an in-process tool**
+   (fault boundary — a hung script must not wedge the tool-loop), reached via
+   `dispatch_to_connector` (`forkd.run` → `forkd.result`); the sandbox *mechanism* is
+   a library wrapped AS a connector so Octo supervises it. **Three isolation layers**
+   (L1 host←agent = hardened systemd unit or container; L2 agent←scripts = forkd→bwrap,
+   v0 = drop-uid + cwd=scratch + /tmp; L3 script←resources = per-skill caps in
+   `forkd.toml` — forkd is the router for code), and **L1 does NOT replace L2**.
+   **Decision:** real python/bash = interpreter processes → **subprocess + Linux
+   sandbox (bwrap/nsjail/landlock/seccomp), NOT WASM** — "WASM-first" only ever covers
+   a constrained pure-compute DSL, never Albert's actual shell need, so go straight to
+   the subprocess runner. An **executable skill = declarative SKILL.md (1) + scripts
+   run in forkd**. Isolation mandatory (root on VM). Reference point: Claude Code
+   itself never runs bash as a bare tool — bubblewrap + permission gate + hook-veto
+   always sit between the model and the host.
 4. **More connectors + web search** — parallel, cheap. The web-parser organ
    (Yandex+Playwright, agent-chooses-render), SMTP, more organs (env-as-tools,
    zero cogitator change).
@@ -110,8 +122,11 @@ below.)
   auto|http|browser }`. **The agent chooses Playwright via the `render` param**
   (`auto` = cheap HTTP+readability first, escalate to browser on JS/block; force
   `browser`/`http` to override) — the latency tradeoff is taught in the connector's
-  `description`. Playwright (Node) runs as a supervised **sidecar** the connector
-  drives. Yandex first, Google later. Octo-side work = the connector wrapper
+  `description`. Backend is undecided: **Playwright (Node) sidecar** the connector
+  drives, vs **[[zendriver_browser]]** (Rust-native stealth browser, fewer moving
+  parts, runs under forkd since it still spawns Chromium) — the connector's `render`
+  contract is the same either way, so it's an internal swap picked at build time.
+  Yandex first, Google later. Octo-side work = the connector wrapper
   (scheduler-shaped); the parser core is the user's.
   - **webclaw rejected** (`0xMassi/webclaw`): technically a clean Octo-connector
     fit (MCP/axum sidecar), but **AGPL-3.0** (copyleft gate for a productized
@@ -157,6 +172,24 @@ below.)
   that (perceived → interpreted → recalled → reflected → react), vs one opaque
   rig-tool-loop turn. Resolves the open "does the graph earn its complexity?"
   hypothesis: **yes** — the explicit inter-stage context is the payoff.
+
+## Architectural constraints — Lamantin four pillars (cross-cutting)
+
+Forward-looking requirements for the productized, **multi-user** LamantinAI (full
+note: [[lamantin_four_pillars]]). Single-user Albert doesn't need pillars 2–3 yet,
+but they constrain how the multi-tenant seams are drawn:
+
+1. **SQLite per channel** → concretely an **`octo-history` SQLite backend** (today
+   in-memory / file) — the per-channel store that also serves hot context.
+2. **Secure multitenancy enforced at the router** — tenant separation once, at the
+   routing layer, not sprinkled through handlers.
+3. **Per-user data isolation** — a corollary of 1+2 at the data layer.
+4. **Access checks by the router itself** (router = authority on who reaches what) —
+   **partially realized**: the Telegram edge ACL + trust/role tags +
+   `Filter::with_min_trust` ([[octo_authz_handoff]]) already decide access at the
+   routing edge; forkd's L3 ([[forkd_isolation_architecture]]) is the same principle
+   for code. The general cross-connector router-authority abstraction is the product
+   front.
 
 ## Deferred (not now)
 

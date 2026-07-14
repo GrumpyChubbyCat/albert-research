@@ -530,3 +530,42 @@ Refined (user): octo-code is **not a module inside octo-rig** — it is its **ow
 in the octo workspace, pulled in when you enable octo-rig's **`code` feature**
 (`octo-rig = { features = ["code"] }` → optional `dep:octo-code`, tools re-exported).
 Updated [[file_code_tooling]] + roadmap phase 2.
+
+## [2026-07-15 note] Octo file/workspace/storage stack + Telegram batching landed
+
+Built the file-workspace capability stack in octo (outside Albert) and wrote
+`octo_files_and_workspace_handoff.md`. Available now via path-dep (octo `main`,
+pushed).
+
+- **octo-code** (`b3ff7dc`): rig file tools read/write/edit/list/glob/grep, jailed
+  to $OCTO_CODE_WORKSPACE, behind octo-rig `code` feature + `code_tools!` macro.
+- **octo-connector-storage** (`fd14c07`): durable object store, put/get/list/delete
+  + promote/checkout, backend swappable (local now, S3 later), factory type=storage.
+- **Telegram coalescing** (`7ed7f8d`): forwarded/album bursts -> one input
+  (octo_core::InboundMessage), signal-driven (media_group_id / forward_origin),
+  zero latency on normal chat.
+- **Telegram file transfer** (`55d6db9`): inbound doc -> workspace inbox/ + reference;
+  outbound chat.send_file { path }. Bytes by reference, never through the model.
+- **octo-workspace** (`c69471e`): shared path-jail + atomic write, one place to audit.
+
+Next Albert move: coordinate one workspace root across octo-code/storage/telegram,
+enable the `code` feature + code_tools!, register the storage factory + manifest,
+add `workspace` to the telegram manifest, and wire two cogitator arms (InboundMessage
+handling + a chat.send_file trigger). Details on the handoff page.
+
+## [2026-07-15 01:35] task | octo-code integrated into Albert (file tools live)
+
+Integrated the octo-code slice of [[octo_files_and_workspace_handoff]]. Bumped octo
+to `c69471e`, added octo-code as a git dep, and installed its six file tools
+(read/write/edit/list/glob/grep) in the cogitator via `code_tools!` alongside
+kaeru/dispatch/scratchpad/skills. Added `[code] workspace` to albert.toml (default
+`state/workspace`, resolved to the config dir); main.rs exports it as
+`OCTO_CODE_WORKSPACE` and creates it, so octo-code jails every file op there.
+Verified locally (workspace resolves + is created, clean start; octo bump did not
+break existing telegram/calendar/memory). Committed `d8ed5e4`. **Deferred** (staged,
+not done): storage connector (workspace path-coordination between base_dir and the
+config dir to verify) and Telegram file transfer + multimodal `InboundMessage` /
+`chat.send_file` (carries the vision decision). Roadmap phase 2 + handoff updated.
+Note: not yet deployed — the octo bump changes the telegram connector (coalescing /
+file transfer), so a VM deploy wants a check that the new telegram connector starts
+without the (still-absent) manifest `workspace`.
