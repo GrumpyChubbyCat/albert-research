@@ -569,3 +569,19 @@ config dir to verify) and Telegram file transfer + multimodal `InboundMessage` /
 Note: not yet deployed — the octo bump changes the telegram connector (coalescing /
 file transfer), so a VM deploy wants a check that the new telegram connector starts
 without the (still-absent) manifest `workspace`.
+
+## [2026-07-15 02:05] note | Skill bundled resources — skill_file built; scripts/assets = mount at forkd
+
+Skills are folders that can bundle resources. Built `skill_file` (read a skill's
+informational files in place — read-only, jailed to the skill folder; `skill_apply`
+now lists a skill's files) — [[declarative_skills]] § Bundled resources, commit
+`2c7ea58`; daily-brief ships `brief-format.md` as a worked example. Scripts + binary
+assets (fonts/images) can't go into context; the answer is NOT a materialize-into-
+context tool but mounting the skills root read-only into the forkd sandbox (run /
+consume in place, no copy) — the consumer (exec) is forkd-era. A materialization
+cache (LRU like the skill body) is warranted only for a REMOTE skill store; for local
+skills the filesystem is the cache. Also verified: octo's telegram coalescing
+(`c69471e`, `batch.rs`) publishes a forwarded **text** burst as one joined `String`
+(test `forward_burst_coalesces_to_one_joined_string`), so the existing cogitator arm
+handles it — Albert answers a batch once, no cogitator change; only **image** bursts
+(`InboundMessage`) need the deferred multimodal arm.

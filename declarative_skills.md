@@ -76,6 +76,32 @@ scripts), but running scripts waits on the sandbox substrate. Don't conflate.
   `SKILL.md` (meta — Albert learning a routine and writing it down) is a natural
   extension that pairs with the proactivity routines.
 
+## Bundled resources — files, scripts, assets
+
+A skill is a **folder**, not just a `SKILL.md` — it can ship templates, references,
+examples (informational) and, later, scripts / binary assets (fonts, images, data).
+Access mode depends on the kind:
+
+- **Informational text** (templates, references) — `skill_file { name, path }` reads
+  it **in place** into context (read-only, jailed to the skill's own folder; built
+  2026-07-15). `skill_apply` lists a skill's bundled files. No copy into the
+  workspace — the agent reads a skill's resources where they live and does its work
+  in the separate octo-code workspace.
+- **Scripts (to run) + binary assets (fonts/images/data)** — these **cannot go into
+  context**; they must exist as files at a real path to be executed / consumed. The
+  clean answer is NOT a materialize-into-context tool but, at the forkd/exec stage,
+  **mount the skills root read-only into the sandbox** (as OpenClaw mounts workspaces
+  ro/rw; as Claude Code runs `.claude/skills/<name>/scripts/*` in place). Then scripts
+  run and assets load by path, in place — no copy, no cache. Their real consumer
+  (execution) is forkd-era anyway, so nothing to build now.
+- **A materialization cache** (stage files locally + cache, LRU like the body cache)
+  is warranted **only if skills go remote** (a cloud/S3 skill store) — fetch-once,
+  cache by skill+version. For a **local** skills dir + local sandbox the filesystem
+  *is* the cache; mount beats materialize.
+
+So `skill_file` covers the informational need now; scripts/assets are a forkd concern
+(mount, don't copy); a cache is a remote-skills concern.
+
 ## Connections
 
 - **Sibling working surface:** [[loop_scratchpad]] — skill guides the *how*, the
