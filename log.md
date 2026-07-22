@@ -637,3 +637,27 @@ exported, forkd still drop_uid=Some(999), the bundled script readable by
 albert-scripts. Chain: catalog -> skill_apply (instructions + file list) ->
 forkd.run skill_path -> in-place exec as uid 999 -> stdout back as data. Tested in
 octo (in-place exec with workspace cwd; skill-path escape rejected).
+
+## [2026-07-23 00:05] task | SQLite history backend (sqlx) + cozo↔sqlx conflict resolved
+
+Albert's per-channel transcript is now durable. octo-history (`6491efe`) gained a
+SqliteHistory backend behind a `sqlite` feature — sqlx (bundled libsqlite3, runtime
+queries, embedded migrations run at open), one table + three trivial statements.
+Chose sqlx over diesel-async: the surface is tiny and the trait is async, while
+diesel's SQLite path is a spawn_blocking sync-wrapper anyway (an ORM's relational
+strengths aren't exercised by a 2-column transcript). widehabit (the user's
+diesel-async example) is Postgres + a real relational schema — right tool there,
+wrong fit here.
+
+**The interesting bit — a hard `links = "sqlite3"` conflict.** Adding sqlx broke
+Albert's build: sqlx-sqlite pulls `libsqlite3-sys`, and **cozo (via kaeru) pulls
+`sqlite3-src`** — two different sqlite bindings, both linking the native sqlite3,
+which Cargo forbids in one binary. Root cause: kaeru pulled cozo with its default
+`compact` bundle → `minimal` → `storage-sqlite` → `sqlite3-src`, yet kaeru only ever
+opens the `mem`/`rocksdb` engines. Fixed IN kaeru (`1ac19b6`, pushed):
+`cozo = { default-features = false, features = ["graph-algo","requests","storage-rocksdb"] }`
+— drops the unused sqlite engine (smaller binary too), 107 kaeru-core tests green,
+sqlite3-src gone from the tree. Albert re-pinned kaeru to that rev; build clean;
+SqliteHistory verified (DB created, migrated, turns schema present). Lesson: an app
+can only host ONE sqlite linker — a memory substrate's transitive sqlite forecloses
+the app's own unless trimmed.
