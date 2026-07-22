@@ -623,3 +623,17 @@ Systemic isolation pass, deployed and verified on the stand:
 Also: deploy/ reorganized to kaeru layout (docker/ + root compose + contrib/deploy),
 and confirmed the workspace path has ONE source (albert.toml [code].workspace ->
 $OCTO_CODE_WORKSPACE; no manifest pins its own).
+
+## [2026-07-22 23:35] task | Executable skills complete — skill scripts run in place (skill_path)
+
+The missing link closed. forkd (octo `005ce0c`) gains a second named root — the
+skills dir (`$OCTO_SKILLS_DIR`, exported by main.rs beside the workspace) — and
+`forkd.run { skill_path: "<skill>/scripts/x" }` executes a skill's bundled script
+IN PLACE: never copied into the workspace, bytes never through the model; cwd stays
+the workspace so outputs land there; jailed like every path. fetch-url upgraded to a
+true executable skill (bundles scripts/fetch.sh; SKILL.md invokes it by skill_path).
+system.md teaches the in-place rule. Deployed under the hardened unit: skills root
+exported, forkd still drop_uid=Some(999), the bundled script readable by
+albert-scripts. Chain: catalog -> skill_apply (instructions + file list) ->
+forkd.run skill_path -> in-place exec as uid 999 -> stdout back as data. Tested in
+octo (in-place exec with workspace cwd; skill-path escape rejected).
