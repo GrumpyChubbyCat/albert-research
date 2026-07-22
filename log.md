@@ -602,3 +602,24 @@ in-process tool for the privilege-separation seam (the real isolation is the sub
 + limits, identical either way — see [[forkd_isolation_architecture]]). Gotcha fixed: an
 old RUST_LOG in /opt/albert/.env overrode the binary's log filter. Next: bwrap mount-ns
 (L2) + per-skill caps (L3) + systemd-harden the Albert unit (L1).
+
+## [2026-07-22 23:25] task | L1 hardening live — Albert unprivileged; handoff fixed
+
+Systemic isolation pass, deployed and verified on the stand:
+- octo `2c2ceb6`: workspace writes 0o600 -> 0o660 (the workspace is the agent<->script
+  handoff surface, shared via a common group); forkd's drop gate is now cap-aware
+  (root OR CAP_SETUID+CAP_SETGID from /proc/self/status), so a hardened non-root
+  service can still drop scripts.
+- VM: users `albert` (runs the service) + `albert-scripts` (in group albert);
+  state/kaeru/telegram-ACL chowned; workspace setgid 2770 (0777 removed).
+- Unit (canonical copy: contrib/deploy/albert.service): User=albert, UMask=0007,
+  NoNewPrivileges, AmbientCapabilities/BoundingSet=CAP_SETUID CAP_SETGID,
+  ProtectSystem=strict, ProtectHome, PrivateTmp, ReadWritePaths=state,kaeru,ACL dir;
+  RestrictNamespaces deliberately off (future bwrap L2 needs namespaces). Secrets
+  stay root-0600 .env, injected by systemd before the privilege drop.
+- Verified: service runs as albert; forkd ready drop_uid=Some(999) VIA CAPS;
+  kaeru/scheduler/ACL read-write; zero permission errors. This closes the
+  agent-writes-0600-scripts-cannot-read handoff gap (0660 + setgid + UMask).
+Also: deploy/ reorganized to kaeru layout (docker/ + root compose + contrib/deploy),
+and confirmed the workspace path has ONE source (albert.toml [code].workspace ->
+$OCTO_CODE_WORKSPACE; no manifest pins its own).
