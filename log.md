@@ -585,3 +585,20 @@ skills the filesystem is the cache. Also verified: octo's telegram coalescing
 (test `forward_burst_coalesces_to_one_joined_string`), so the existing cogitator arm
 handles it — Albert answers a batch once, no cogitator change; only **image** bursts
 (`InboundMessage`) need the deferred multimodal arm.
+
+## [2026-07-22 21:45] task | forkd v0 shipped — executable skills (sandboxed script exec)
+
+Unparked phase 3. Built `octo-connector-forkd` (octo, tested: runs+captures, timeout-
+kills a hang, rejects a path escape) and wired it into Albert. `forkd.run` runs a
+skill's script as a subprocess: cwd = $OCTO_CODE_WORKSPACE, env_clear (child never
+sees the agent's tokens/keys; PATH/HOME/LANG/TMPDIR kept so python3/curl/wget resolve),
+drop-uid via run_as (setuid to `albert-scripts` uid 999 when root), wall-clock timeout
+that SIGKILLs the process group, CPU/file rlimits. Network inherited -> curl/wget work
+("half of existing skills"). python3.12 is fine (no 3.14 needed). An executable skill =
+SKILL.md + a script handed to forkd.run (system.md SCRIPTS section; example skill
+`fetch-url`). Deployed: provisioned `albert-scripts` (uid 999) + chmod 0777 workspace;
+verified `forkd ready drop_uid=Some(999)` on the VM. Chose the connector over an
+in-process tool for the privilege-separation seam (the real isolation is the subprocess
++ limits, identical either way — see [[forkd_isolation_architecture]]). Gotcha fixed: an
+old RUST_LOG in /opt/albert/.env overrode the binary's log filter. Next: bwrap mount-ns
+(L2) + per-skill caps (L3) + systemd-harden the Albert unit (L1).

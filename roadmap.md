@@ -92,9 +92,15 @@ wipe the live box."
    the **storage connector** (durable artifacts, local↔S3 — needs base_dir/workspace
    path coordination) and **Telegram file transfer + multimodal `InboundMessage` /
    `chat.send_file`** (has a vision decision). See [[file_code_tooling]].
-3. **forkd — sandboxed execution** — **PARKED** (not needed yet). Folder-level
-   confinement (phase 2) covers the current need; a real code sandbox only becomes
-   necessary when Albert runs untrusted code. Full design in
+3. **forkd — sandboxed execution** — **v0 SHIPPED 2026-07-22** (`octo-connector-forkd`,
+   deployed). `forkd.run { script|path, interpreter?, args?, timeout_secs? }` runs a
+   script as a subprocess jailed to `$OCTO_CODE_WORKSPACE`, clean env (no agent
+   secrets), **dropped privileges** (setuid to `albert-scripts` uid 999 on the VM),
+   a wall-clock timeout that SIGKILLs the process group, and CPU/file rlimits; network
+   inherited (curl/wget/pip work). Executable skill = SKILL.md + a script handed to
+   `forkd.run` (example: `fetch-url`). **Next:** full bwrap mount-ns (L2), per-skill
+   capabilities (L3: net/fs_rw/mem), systemd-hardening the Albert unit (L1). Full
+   design in
    [[forkd_isolation_architecture]]: forkd is a **connector, not an in-process tool**
    (fault boundary — a hung script must not wedge the tool-loop), reached via
    `dispatch_to_connector` (`forkd.run` → `forkd.result`); the sandbox *mechanism* is
